@@ -6,6 +6,7 @@ from transformers import AutoTokenizer
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 from rouge import Rouge
 from tqdm import tqdm
+from torchsummary import summary
 
 
 class Trainer():
@@ -72,7 +73,6 @@ class Trainer():
             'micro', evaluation['micro']['p'], evaluation['micro']['r'], evaluation['micro']['f1'],
         ))
 
-
     def get_rouge(self, y_true, y_pred):
         text_true = self.tokenizer.decode(y_true)
         text_pred = self.tokenizer.decode(y_pred)
@@ -80,15 +80,26 @@ class Trainer():
 
     def train(self, dataloader: DataLoader, optimizer, scheduler, epochs=10, print_per_iter=1000):
         self.model.train()
-        self.model.to(self.device)
+        # self.model.to(self.device)
         for epoch in range(epochs):
             for idx, batch in enumerate(dataloader):
+
+                # print(self.model)
+                #
+                # summary(self.model, input_size=[
+                #     batch[0].size(), batch[1].size(), batch[2].size(), batch[3].size(), batch[4].size(),
+                #     batch[5].size(), \
+                #     batch[6].size(), batch[7].size(), batch[8].size(), batch[9].size()
+                # ])
+                #
+                # exit()
+
                 article_input_ids, article_attention_mask, highlights_input_ids, highlights_attention_mask, \
                 article_triples_input_ids, article_triples_attention_mask, article_triples_start_positions, \
                 article_triples_start_positions_mask, article_triples_label, article_triples_label_mask = \
-                batch[0].to(self.device), batch[1].to(self.device), batch[2].to(self.device), batch[3].to(self.device), \
-                batch[4].to(self.device), batch[5].to(self.device), batch[6].to(self.device), batch[7].to(self.device), \
-                batch[8].to(self.device), batch[9].to(self.device)
+                    batch[0].cuda(), batch[1].cuda(), batch[2].cuda(), batch[3].cuda(), \
+                    batch[4].cuda(), batch[5].cuda(), batch[6].cuda(), batch[7].cuda(), \
+                    batch[8].cuda(), batch[9].cuda()
 
                 optimizer.zero_grad()
                 output = self.model(
@@ -125,7 +136,7 @@ class Trainer():
             names = os.listdir(self.model_dir)
             model_name = sorted(names)[-1]
         self.loading_model(model_name)
-        self.model.to(self.device)
+        # self.model.to(self.device)
         self.model.eval()
         trues, preds = [], []
         with torch.no_grad():
@@ -133,11 +144,9 @@ class Trainer():
                 article_input_ids, article_attention_mask, highlights_input_ids, highlights_attention_mask, \
                 article_triples_input_ids, article_triples_attention_mask, article_triples_start_positions, \
                 article_triples_start_positions_mask, article_triples_label, article_triples_label_mask = \
-                    batch[0].to(self.device), batch[1].to(self.device), batch[2].to(self.device), batch[3].to(
-                        self.device), \
-                    batch[4].to(self.device), batch[5].to(self.device), batch[6].to(self.device), batch[7].to(
-                        self.device), \
-                    batch[8].to(self.device), batch[9].to(self.device)
+                    batch[0].cuda(), batch[1].cuda(), batch[2].cuda(), batch[3].cuda(), \
+                    batch[4].cuda(), batch[5].cuda(), batch[6].cuda(), batch[7].cuda(), \
+                    batch[8].cuda(), batch[9].cuda()
 
                 output = self.model(
                     article_input_ids=article_input_ids,  # input_ids

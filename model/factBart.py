@@ -383,7 +383,7 @@ class FactBartDecoder(nn.Module):
                 input_shape,
                 input_embeds.dtype,
                 past_key_value_length
-            )
+            ).to(attention_mask.device)
 
         if attention_mask is not None:
             # attention_mask: [batch_size, arc_len] -> [batch_size, 1, tgt_len, src_len]

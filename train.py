@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 
+from torch.nn import DataParallel
 from torch.utils.data import DataLoader
 from model.factBart import FactBartForGeneration
 from utils.bart_dataset import FactDataset
@@ -10,9 +11,7 @@ from transformers import AdamW, get_linear_schedule_with_warmup
 
 
 def train(args):
-    train_dataset = FactDataset(data_path=os.path.join(args.data_dir, 'train.json'), max_seq_len=args.max_position_embeddings, tokenizer_path=args.tokenizer_name)
-    # valid_dataset = FactDataset(data_path=os.path.join(args.data_dir, 'valid.json'), max_seq_len=args.max_position_embeddings, tokenizer_path=args.tokenizer_name)
-    # test_dataset = FactDataset(data_path=os.path.join(args.data_dir, 'test.json'), max_seq_len=args.max_position_embeddings, tokenizer_path=args.tokenizer_name)
+    train_dataset = FactDataset(data_path=os.path.join(args.data_dir, 'train.json'))
 
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -21,7 +20,7 @@ def train(args):
     )
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = FactBartForGeneration(args)
+    model = DataParallel(FactBartForGeneration(args)).cuda()
 
     optimizer = AdamW(params=model.parameters(), lr=args.learning_rate)
     total_steps = len(train_loader) * args.epochs
@@ -50,16 +49,16 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-data_dir', default='data/', type=str)
-    parser.add_argument('-batch_size', default=32, type=int)
+    parser.add_argument('-data_dir', default='./data/cnn_dailymail/', type=str)
+    parser.add_argument('-batch_size', default=8, type=int)
     parser.add_argument('-train_shuffle', default=True, type=bool)
     parser.add_argument('-learning_rate', default=5e-5, type=float)
     parser.add_argument('-warmup_rate', default=0.1, type=float)
     parser.add_argument('-model_saved_dir', default='./results/saving_models', type=str)
-    parser.add_argument('-tokenizer_name', default='./facebook/bart-base', type=str)
+    parser.add_argument('-tokenizer_name', default='../pretrained_models/bart_base', type=str)
     parser.add_argument('-epochs', default=10, type=int)
     parser.add_argument('-print_per_iter', default=1000, type=int)
-
+    parser.add_argument('-device_ids', default=None)
     parser.add_argument('-d_model', default=768, type=int)
     parser.add_argument('-vocab_size', default=50265, type=int)
     parser.add_argument('-pad_token_id', default=1, type=int)
